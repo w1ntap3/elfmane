@@ -1,3 +1,5 @@
+.gitignore
 tests
 project.md
 .vscode
+main

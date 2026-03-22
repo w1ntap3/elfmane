@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 
 #define ERROR_PRINT "\e[0;31m"
 #define WARNING_PRINT "\e[0;33m"
@@ -7,35 +8,9 @@
 
 #define ENDIANNESS_STRING(n) n ? "Big" : "Little"
 
-int check_help(const char *arg) {
-        if (!strcmp(arg, "--help") || !strcmp(arg, "-h")) {
-                printf("Usage: elfmane [FILE_PATH] [OPTIONS]\n"
-                        "%-20s %s\n"
-                        "OPTIONS:\n"
-                        "%-20s %s\n"
-                        "%-20s %s\n"
-                        "%-20s %s\n"
-                        "%-20s %s\n"
-                        "FLAGS:\n"
-                        "%-20s %s\n"
-                        "COLOR CODES:\n"
-                        "%sRED: Error occurred%s\n"
-                        "%sYELLOW: Warnings for unusual information in the file%s\n"
-                        "%sGREEN: Highlight important (commonly looked for) fields%s\n",
-                        "-h, --help", "Show the help list",
-                        "[NO OPTIONS]", "All information elfmane can give",
-                        "-e", "ELF header fields",
-                        "-p", "Program header fields",
-                        "-s", "Section header fields",
-                        "-f", "Force read (ignore warnings/errors)",
-                        ERROR_PRINT, RESET_PRINT,
-                        WARNING_PRINT, RESET_PRINT,
-                        HIGHLIGHT_PRINT, RESET_PRINT
-                        );
-                return 1;
-        }
-        return 0;
-}
+#define PF_R 0x4
+#define PF_W 0x2
+#define PF_X 0x1
 
 char* os_abi_lookup(int osabi) {
         switch (osabi)
@@ -112,31 +87,31 @@ char* file_type_lookup(uint16_t e_type) {
         switch (e_type)
         {
         case 0x00:
-                return "Unknown (ET_NONE)";
+                return "Unknown (NONE)";
                 break;
         case 0x01:
-                return "Relocatable file (ET_REL)";
+                return "Relocatable file (REL)";
                 break;
         case 0x02:
-                return "Executable file (ET_EXEC)";
+                return "Executable file (EXEC)";
                 break;
         case 0x03:
-                return "Shared object (ET_DYN)";
+                return "Shared object (DYN)";
                 break;
         case 0x04:
-                return "Core file (ET_CORE)";
+                return "Core file (CORE)";
                 break;
         case 0xFE00:
-                return "Reserved inclusive range (ET_LOOS)";
+                return "Reserved inclusive range (LOOS)";
                 break;
         case 0xFEFF:
-                return "Reserved inclusive range (ET_HIOS)";
+                return "Reserved inclusive range (HIOS)";
                 break;
         case 0xFF00:
-                return "Reserved inclusive range (ET_LOPROC)";
+                return "Reserved inclusive range (LOPROC)";
                 break;
         case 0xFFFF:
-                return "Reserved inclusive range (ET_HIPROC)";
+                return "Reserved inclusive range (HIPROC)";
                 break;
         default:
                 break;
@@ -352,6 +327,127 @@ char* target_isa_lookup(uint16_t e_machine) {
 			break;
 		case 0x102:
 			return "LoongArch";
+			break;
+		default:
+			return "Undefined";
+			break;
+	}
+}
+
+char* p_type_lookup(uint32_t p_type) {
+        switch (p_type)
+        {
+		case 0x00000000:
+			return "NULL";
+			break;
+		case 0x00000001:
+			return "LOAD";
+			break;
+		case 0x00000002:
+			return "DYNAMIC";
+			break;
+		case 0x00000003:
+			return "INTERP";
+			break;
+		case 0x00000004:
+			return "NOTE";
+			break;
+		case 0x00000005:
+			return "SHLIB";
+			break;
+		case 0x00000006:
+			return "PHDR";
+			break;
+		case 0x00000007:
+			return "TLS";
+			break;	
+		case 0x60000000:
+			return "LOOS";
+			break;
+		case 0x6FFFFFFF:
+			return "HIOS";
+			break;
+		case 0x70000000:
+			return "LOPROC";
+			break;
+		case 0x7FFFFFFF:
+			return "HIPROC";
+			break;
+		default:
+			return "[undef]";
+			break;
+        }
+}
+
+void p_flag_string(char* flag_str, uint32_t p_flags) {
+	flag_str[0] = (p_flags & PF_R) ? 'R' : '-';
+	flag_str[1] = (p_flags & PF_W) ? 'W' : '-';
+	flag_str[2] = (p_flags & PF_X) ? 'X' : '-';
+}
+
+char* s_name(uint32_t sh_name) {
+	return "temp_name";
+}
+
+char* s_type_lookup(uint32_t sh_type) {
+	switch (sh_type)
+	{
+		case 0x0:
+			return "NULL";
+			break;
+		case 0x1:
+			return "PROGBITS";
+			break;
+		case 0x2:
+			return "SYMTAB";
+			break;
+		case 0x3:
+			return "STRTAB";
+			break;
+		case 0x4:
+			return "RELA";
+			break;
+		case 0x5:
+			return "HASH";
+			break;
+		case 0x6:
+			return "DYNAMIC";
+			break;
+		case 0x7:
+			return "NOTE";
+			break;
+		case 0x8:
+			return "NOBITS";
+			break;
+		case 0x9:
+			return "REL";
+			break;
+		case 0x0A:
+			return "SHLIB";
+			break;
+		case 0x0B:
+			return "DYNSYM";
+			break;
+		case 0x0E:
+			return "INIT_ARRAY";
+			break;
+		case 0x0F:
+			return "FINI_ARRAY";
+			break;
+		case 0x10:
+			return "PREINIT_ARRAY";
+			break;
+		case 0x11:
+			return "GROUP";
+			break;
+		case 0x12:
+			return "SYMTAB_SHNDX";
+			break;
+		case 0x13:
+			return "NUM";
+			break;
+		case 0x60000000:
+			return "LOOS";
 			break;
 		default:
 			return "Undefined";
