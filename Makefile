@@ -1,16 +1,17 @@
-COMPILE_PATH := src/main.c
-EXECUTABLE := main
+SRC := $(wildcard src/*.c)
+TARGET := main
 
 run: compile
-	./${EXECUTABLE}
+	./${TARGET}
 
 path: compile
-	cp ${EXECUTABLE} elfmane
+	cp ${TARGET} elfmane
 	chmod +x ./elfmane
 	sudo rm /usr/local/bin/elfmane
 	sudo mv elfmane /usr/local/bin
+
 compile:
-	gcc ${COMPILE_PATH} -o ${EXECUTABLE}
+	gcc ${SRC} -o ${TARGET}
 
 clean:
-	rm ${EXECUTABLE}
+	rm ${TARGET}
