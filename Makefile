@@ -1,17 +1,17 @@
 SRC := $(wildcard src/*.c)
-TARGET := main
+TARGET := elfmane
+PATH_FOR_BIN := ~/.local/bin/
 
 run: compile
 	./${TARGET}
 
 path: compile
-	cp ${TARGET} elfmane
-	chmod +x ./elfmane
-	sudo rm /usr/local/bin/elfmane
-	sudo mv elfmane /usr/local/bin
+	chmod +x ${TARGET}
+	mv ${TARGET} ${PATH_FOR_BIN}
 
 compile:
 	gcc ${SRC} -o ${TARGET}
 
 clean:
-	rm ${TARGET}
+	rm -f ./${TARGET} 
+	rm -f ${PATH_FOR_BIN}${TARGET}
