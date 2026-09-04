@@ -1,7 +1,6 @@
 #ifndef LOG_H
 #define LOG_H
 
-// ANSI Colors
 #define ERROR_COLOR "\e[0;31m"
 #define WARNING_COLOR "\e[0;33m"
 #define HIGHLIGHT_COLOR "\e[0;32m"

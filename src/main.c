@@ -1,59 +1,49 @@
-#include "elf.h"
-#include "log.h"
 #include "util.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
+#define ELFMANE_VERSION "v1.2.0 (enhanced cli)"
+
+int handle_header(int argc, const char *argv[]);
+
+static const struct {
+  const char *cmd_name;
+  int (*cmd_handler)(int, const char **);
+} cmd_table[] = {{"header", handle_header}};
+
 int main(int argc, char const *argv[]) {
-  int elf_class = 0;
-
   if (argc < 2) {
-    ERROR("Use \"elfmane [FILE_PATH] [OPTIONS]\" or \"elfmane --help\"");
+    fprintf(stderr, "Usage: elfmane --help\n");
+    // TODO: explain usage by error from log.h
     return 1;
   }
 
-  if (check_help(argv[1]))
+  if (strcmp(argv[1], "--help") == 0) {
+    printf("For now no implementation for help..\n");
+    // TODO: help function
     return 0;
-
-  FILE *target_file = fopen(argv[1], "rb");
-
-  if (target_file == NULL) {
-    ERROR("Could not open the file.");
-    return 1;
   }
-  fread(e_head32.e_ident, sizeof(uint8_t), EI_LEN, target_file);
-  // Check validity of e_ident to identify the class
 
-  if (e_ident_valid(e_head32, &elf_class))
-    return 1;
+  if (strcmp(argv[1], "--version") == 0) {
+    printf("nscli Version: %s\n", ELFMANE_VERSION);
+    return 0;
+  }
 
-  for (int arg_n = 2; arg_n < argc; arg_n++) {
-    if (argv[arg_n][0] == '-') {
-      switch (argv[arg_n][1]) {
-      case 'a':
-        e_header_info(target_file, elf_class);
-        p_header_info(target_file, elf_class);
-        s_header_info(target_file, elf_class);
-        break;
-      case 'e':
-        e_header_info(target_file, elf_class);
-        break;
-      case 'p':
-        p_header_info(target_file, elf_class);
-        break;
-      case 's':
-        s_header_info(target_file, elf_class);
-        break;
-      case 'f':
-        break;
-      default:
-        ERROR("Use \"elfmane [FILE_PATH] [OPTIONS]\" or \"elfmane --help\"");
-        break;
-      }
+  const char *cmd = argv[1];
+
+  const size_t table_entries = sizeof(cmd_table) / sizeof(cmd_table[0]);
+  for (size_t entry = 0; entry < table_entries; entry++) {
+    if (strcmp(cmd, cmd_table[entry].cmd_name) == 0) {
+      int result = cmd_table[entry].cmd_handler(argc - 2, argv + 2);
+      // TODO: handle bad results
+      return result;
     }
   }
-
-  fclose(target_file);
-  return 0;
+  // TODO: error from log.h
+  fprintf(stderr, "Error: No such command as \"%s\" (Use elfmane --help)\n",
+          cmd);
+  return 1;
 }
+
+int handle_header(int argc, const char *argv[]) { return 0; }

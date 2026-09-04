@@ -12,7 +12,6 @@ char *p_type_lookup(uint32_t p_type);
 void p_flag_string(char *flag_str, uint32_t p_flags);
 char *s_name(uint32_t sh_name);
 char *s_type_lookup(uint32_t sh_type);
-int check_help(const char *arg);
 
 #endif // !LOOKUP_H
 #define LOOKUP_H

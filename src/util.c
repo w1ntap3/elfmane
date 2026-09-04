@@ -1,6 +1,4 @@
 #include "util.h"
-#include <stdio.h>
-#include <string.h>
 
 // Column width for printing tables
 #define COL_W 10
@@ -449,29 +447,4 @@ char *s_type_lookup(uint32_t sh_type) {
     return "Undefined";
     break;
   }
-}
-
-int check_help(const char *arg) {
-  if (!strcmp(arg, "--help") || !strcmp(arg, "-h")) {
-    printf("Usage: elfmane [FILE_PATH] [OPTIONS]\n"
-           "%-20s %s\n"
-           "OPTIONS:\n"
-           "%-20s %s\n"
-           "%-20s %s\n"
-           "%-20s %s\n"
-           "%-20s %s\n"
-           "FLAGS:\n"
-           "%-20s %s\n"
-           "COLOR CODES:\n"
-           "%sRED: Error occurred%s\n"
-           "%sYELLOW: Warnings for unusual information in the file%s\n"
-           "%sGREEN: Highlight important (commonly looked for) fields%s\n",
-           "-h, --help", "Show the help list", "[NO OPTIONS]",
-           "All information elfmane can give", "-e", "ELF header fields", "-p",
-           "Program header fields", "-s", "Section header fields", "-f",
-           "Force read (ignore warnings/errors)", ERROR_PRINT, RESET_PRINT,
-           WARNING_PRINT, RESET_PRINT, HIGHLIGHT_PRINT, RESET_PRINT);
-    return 1;
-  }
-  return 0;
 }
