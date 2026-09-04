@@ -2,39 +2,39 @@
 #include "log.h"
 #include <stdint.h>
 
-int e_ident_valid(const struct e_header32 e_head, int *elf_class) {
-  uint8_t return_val = 0; // Return after checking each warning/error case
-
-  if (((*elf_class = e_head.e_ident[EI_CLASS]) != 1) && (*elf_class != 2)) {
-    ERROR("ELF class is neither 32- or 64-bit.");
-    return_val = 1;
-  }
-
-  if (e_head.e_ident[EI_DATA] != 1 && e_head.e_ident[EI_DATA] != 2) {
-    ERROR("Endianness is neither little or big.");
-    return_val = 1;
-  }
-
-  if (e_head.e_ident[EI_VERSION] != 1) {
-    WARNING("ELF Version is not set to 1.");
-  }
-
-  if (e_head.e_ident[EI_OSABI] > 0x12) {
-    WARNING("OS's ABI undefined");
-  }
-
-  // no one cares about ABIVERSION
-
-  uint8_t corrupted = 0; // Padding bytes corruption check
-  for (int i = 0x09; i <= EI_LEN; i++) {
-    if (e_head.e_ident[i] != 0x00)
-      corrupted = 1;
-  }
-
-  if (corrupted)
-    WARNING("File might be corrupted (Padding bytes are not 0)");
-  return return_val;
-}
+// int e_ident_valid(const struct e_header32 e_head, int *elf_class) {
+//   uint8_t return_val = 0; // Return after checking each warning/error case
+//
+//   if (((*elf_class = e_head.e_ident[EI_CLASS]) != 1) && (*elf_class != 2)) {
+//     ERROR("ELF class is neither 32- or 64-bit.");
+//     return_val = 1;
+//   }
+//
+//   if (e_head.e_ident[EI_DATA] != 1 && e_head.e_ident[EI_DATA] != 2) {
+//     ERROR("Endianness is neither little or big.");
+//     return_val = 1;
+//   }
+//
+//   if (e_head.e_ident[EI_VERSION] != 1) {
+//     WARNING("ELF Version is not set to 1.");
+//   }
+//
+//   if (e_head.e_ident[EI_OSABI] > 0x12) {
+//     WARNING("OS's ABI undefined");
+//   }
+//
+//   // no one cares about ABIVERSION
+//
+//   uint8_t corrupted = 0; // Padding bytes corruption check
+//   for (int i = 0x09; i <= EI_LEN; i++) {
+//     if (e_head.e_ident[i] != 0x00)
+//       corrupted = 1;
+//   }
+//
+//   if (corrupted)
+//     WARNING("File might be corrupted (Padding bytes are not 0)");
+//   return return_val;
+// }
 
 // int e_header_info(FILE *target_file, const int elf_class) {
 //   rewind(target_file);

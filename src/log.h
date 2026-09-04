@@ -1,16 +1,9 @@
 #ifndef LOG_H
 #define LOG_H
 
-#define ERROR_COLOR "\e[0;31m"
-#define WARNING_COLOR "\e[0;33m"
-#define HIGHLIGHT_COLOR "\e[0;32m"
-#define RESET_PRINT "\033[0m"
-
-// Macros
-// #define ERROR(s) fprintf(stderr, "%s%s%s\n", ERROR_PRINT, s, RESET_PRINT)
-#define ERROR(s) ERROR_COLOR s RESET_PRINT
-// #define WARNING(s) fprintf(stderr, "%s%s%s\n", WARNING_PRINT, s, RESET_PRINT)
-#define WARNING(s) WARNING_COLOR s RESET_PRINT
-#define HIGHLIGHT(s) HIGHLIGHT_COLOR s RESET_PRINT
+void log_err(const char *fs, ...);
+void log_war(const char *fs, ...);
+void log_inf(const char *fs, ...);
+void log_sys(const char *fs, ...);
 
 #endif // !LOG_H

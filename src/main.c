@@ -1,9 +1,10 @@
+#include "log.h"
 #include "util.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#define ELFMANE_VERSION "v1.2.0 (enhanced cli)"
+#define ELFMANE_VERSION "v1.3.0 (logging)"
 
 int handle_header(int argc, const char *argv[]);
 
@@ -14,8 +15,7 @@ static const struct {
 
 int main(int argc, char const *argv[]) {
   if (argc < 2) {
-    fprintf(stderr, "Usage: elfmane --help\n");
-    // TODO: explain usage by error from log.h
+    log_sys("Usage: elfmane --help");
     return 1;
   }
 
@@ -41,8 +41,7 @@ int main(int argc, char const *argv[]) {
     }
   }
   // TODO: error from log.h
-  fprintf(stderr, "Error: No such command as \"%s\" (Use elfmane --help)\n",
-          cmd);
+  log_sys("No such command as \"%s\". (Refer to elfmane --help)", cmd);
   return 1;
 }
 
