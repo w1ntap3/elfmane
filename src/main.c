@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define ELFMANE_VERSION "v1.3.0 (logging)"
+#define ELFMANE_VERSION "v1.4.0 (help)"
 
 int handle_header(int argc, const char *argv[]);
 
@@ -20,13 +20,12 @@ int main(int argc, char const *argv[]) {
   }
 
   if (strcmp(argv[1], "--help") == 0) {
-    printf("For now no implementation for help..\n");
-    // TODO: help function
+    util_help();
     return 0;
   }
 
   if (strcmp(argv[1], "--version") == 0) {
-    printf("nscli Version: %s\n", ELFMANE_VERSION);
+    printf("elfmane version: %s\n", ELFMANE_VERSION);
     return 0;
   }
 
