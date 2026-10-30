@@ -1,8 +1,10 @@
+#define _POSIX_C_SOURCE 200809L // fileno(), isatty()
+
 #include "log.h"
-#include "stdarg.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #define MAX_LOG_LEN 2048
 
@@ -17,14 +19,14 @@
 #define INF_TAG "INFO"
 #define SYS_TAG "ELFMANE"
 
-static inline int validate_fs(const char *fs) {
-  if (fs == NULL || (strlen(fs) == 0)) {
+static int validate_fs(const char *fs) {
+  if (fs == NULL || (fs[0] == '\0')) {
     log_sys("Received an empty request to log.");
     return 1;
   }
-  if (strlen(fs) > MAX_LOG_LEN) {
-    log_sys("Dropped a log with length %d. (Max is %d)", strlen(fs),
-            MAX_LOG_LEN);
+  const size_t len = strlen(fs);
+  if (len > MAX_LOG_LEN) {
+    log_sys("Dropped a log with length %zu. (Max is %d)", len, MAX_LOG_LEN);
     return 1;
   }
   return 0;
@@ -35,7 +37,11 @@ static void log_skeleton(const char *tag, const char *color, const char *fs,
   char buf[MAX_LOG_LEN];
 
   vsnprintf(buf, sizeof(buf), fs, args);
-  fprintf(stream, "%s%s: %s\n" RES_COL, color, tag, buf);
+  if (isatty(fileno(stream))) {
+    fprintf(stream, "%s%s: %s\n" RES_COL, color, tag, buf);
+  } else {
+    fprintf(stream, "%s: %s\n", tag, buf);
+  }
 }
 
 void log_err(const char *fs, ...) {

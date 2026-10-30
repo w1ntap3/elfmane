@@ -1,3 +1,7 @@
-.gitignore
-tests
-main
+elfmane
+*.o
+
+tests/
+
+*.swp
+*.swo

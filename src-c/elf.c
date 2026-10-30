@@ -1,24 +1,9 @@
-#include "util.h"
-#include <stdio.h>
+#include "elf.h"
 
-// Column width for printing tables
-#define COL_W 10
-
-// Flags for program header table
+// Flags for program header table entries
 #define PF_R 0x4
 #define PF_W 0x2
 #define PF_X 0x1
-
-struct Help_entry {
-  char *key;
-  char *value;
-};
-
-// const struct Help_entry help_table[] = {{"salam", "aleykum"}};
-const struct Help_entry help_table[] = {
-    {"--version", "the current version of the program on your system"},
-    {"--help", "list of all subcommands and flags"},
-};
 
 char *os_abi_lookup(int osabi) {
   switch (osabi) {
@@ -279,7 +264,11 @@ void p_flag_string(char *flag_str, uint32_t p_flags) {
   flag_str[2] = (p_flags & PF_X) ? 'X' : '-';
 }
 
-char *s_name(uint32_t sh_name) { return "temp_name"; }
+// Phase 1 stub: resolves against the shstrtab once elf_read_shdrs() exists.
+char *s_name(uint32_t sh_name) {
+  (void)sh_name;
+  return "temp_name";
+}
 
 char *s_type_lookup(uint32_t sh_type) {
   switch (sh_type) {
@@ -326,10 +315,3 @@ char *s_type_lookup(uint32_t sh_type) {
   }
 }
 
-void util_help(void) {
-  printf("List of all help:\n");
-  const int entries = (int)(sizeof(help_table) / (int)sizeof(help_table[0]));
-  for (int entry = 0; entry < entries; entry++) {
-    printf("\t%-20s %s\n", help_table[entry].key, help_table[entry].value);
-  }
-}

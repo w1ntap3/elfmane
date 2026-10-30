@@ -1,7 +1,6 @@
 #ifndef ELF_H
 #define ELF_H
 
-#include "util.h"
 #include <stdint.h>
 #include <stdio.h>
 // e_ident indexing
@@ -106,9 +105,15 @@ struct s_header64 {
   uint64_t sh_entsize;
 };
 
-int e_ident_valid(const struct e_header32 e_head, int *elf_class);
-int e_header_info(FILE *target_file, const int elf_class);
-int p_header_info(FILE *target_file, const int elf_class);
-int s_header_info(FILE *target_file, const int elf_class);
+// Lookup helpers: map raw ELF field values to human-readable strings.
+// Stable API — the v2 printers in Phase 1 build on these.
+char *os_abi_lookup(int osabi);
+char *padding_bytes_check(uint8_t e_ident[]);
+char *file_type_lookup(uint16_t e_type);
+char *target_isa_lookup(uint16_t e_machine);
+char *p_type_lookup(uint32_t p_type);
+void p_flag_string(char *flag_str, uint32_t p_flags);
+char *s_name(uint32_t sh_name);
+char *s_type_lookup(uint32_t sh_type);
 
 #endif // !ELF_H
