@@ -19,12 +19,12 @@
 #define INF_TAG "INFO"
 #define SYS_TAG "ELFMANE"
 
-static int validate_fs(const char *fs) {
-  if (fs == NULL || (fs[0] == '\0')) {
+static int validate_format(const char *format) {
+  if (format == NULL || (format[0] == '\0')) {
     log_sys("Received an empty request to log.");
     return 1;
   }
-  const size_t len = strlen(fs);
+  const size_t len = strlen(format);
   if (len > MAX_LOG_LEN) {
     log_sys("Dropped a log with length %zu. (Max is %d)", len, MAX_LOG_LEN);
     return 1;
@@ -32,11 +32,11 @@ static int validate_fs(const char *fs) {
   return 0;
 }
 
-static void log_skeleton(const char *tag, const char *color, const char *fs,
+static void log_skeleton(const char *tag, const char *color, const char *format,
                          va_list args, FILE *__restrict stream) {
   char buf[MAX_LOG_LEN];
 
-  vsnprintf(buf, sizeof(buf), fs, args);
+  vsnprintf(buf, sizeof(buf), format, args);
   if (isatty(fileno(stream))) {
     fprintf(stream, "%s%s: %s\n" RES_COL, color, tag, buf);
   } else {
@@ -44,47 +44,47 @@ static void log_skeleton(const char *tag, const char *color, const char *fs,
   }
 }
 
-void log_err(const char *fs, ...) {
-  int err = validate_fs(fs);
+void log_err(const char *format, ...) {
+  int err = validate_format(format);
   if (err)
     return;
   va_list args;
-  va_start(args, fs);
+  va_start(args, format);
 
-  log_skeleton(ERR_TAG, ERR_COL, fs, args, stderr);
+  log_skeleton(ERR_TAG, ERR_COL, format, args, stderr);
   va_end(args);
 }
 
-void log_war(const char *fs, ...) {
+void log_warn(const char *format, ...) {
 
-  int err = validate_fs(fs);
+  int err = validate_format(format);
   if (err)
     return;
   va_list args;
-  va_start(args, fs);
+  va_start(args, format);
 
-  log_skeleton(WAR_TAG, WAR_COL, fs, args, stderr);
+  log_skeleton(WAR_TAG, WAR_COL, format, args, stderr);
   va_end(args);
 }
-void log_inf(const char *fs, ...) {
+void log_inf(const char *format, ...) {
 
-  int err = validate_fs(fs);
+  int err = validate_format(format);
   if (err)
     return;
   va_list args;
-  va_start(args, fs);
+  va_start(args, format);
 
-  log_skeleton(INF_TAG, INF_COL, fs, args, stderr);
+  log_skeleton(INF_TAG, INF_COL, format, args, stderr);
   va_end(args);
 }
-void log_sys(const char *fs, ...) {
+void log_sys(const char *format, ...) {
 
-  int err = validate_fs(fs);
+  int err = validate_format(format);
   if (err)
     return;
   va_list args;
-  va_start(args, fs);
+  va_start(args, format);
 
-  log_skeleton(SYS_TAG, SYS_COL, fs, args, stderr);
+  log_skeleton(SYS_TAG, SYS_COL, format, args, stderr);
   va_end(args);
 }

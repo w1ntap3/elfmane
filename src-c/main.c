@@ -1,9 +1,11 @@
+#include "cli.h"
+#include "elf.h"
 #include "log.h"
 #include <stdio.h>
 #include <string.h>
 
 // One-word codename describes the current work state.
-#define ELFMANE_VERSION "2.0.0-clean"
+#define ELFMANE_VERSION "2.1.0-headers"
 
 #ifndef ELFMANE_GIT_HASH
 #define ELFMANE_GIT_HASH "unknown"
@@ -61,10 +63,32 @@ int main(int argc, char const *argv[]) {
   return 1;
 }
 
-// Phase 1: parse and print ELF/program/section headers.
 int handle_header(int argc, const char *argv[]) {
-  (void)argc;
-  (void)argv;
-  log_sys("The \"header\" command is not implemented yet.");
-  return 0;
+  Cli_HeaderOpts opts;
+  if (cli_parse_header_opts(argc, argv, &opts) != 0)
+    return 1;
+
+  FILE *f = fopen(opts.path, "rb");
+  if (f == NULL) {
+    log_err("Could not open \"%s\".", opts.path);
+    return 1;
+  }
+
+  int rc = 0;
+  Elf_Header header;
+  if (elf_read_header(f, &header) != 0) {
+    rc = 1;
+  } else if (elf_validate_ident(&header) != 0 && !opts.force) {
+    rc = 1;
+  } else {
+    if (opts.parts & PART_EHDR)
+      elf_print_header(&header);
+    if (opts.parts & PART_PHDR)
+      log_sys("Program header table is not implemented yet.");
+    if (opts.parts & PART_SHDR)
+      log_sys("Section header table is not implemented yet.");
+  }
+
+  fclose(f);
+  return rc;
 }
