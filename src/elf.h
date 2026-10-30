@@ -63,13 +63,36 @@ int elf_validate_ident(const Elf_Header *h);
 // Prints the ELF header; key fields highlighted when stdout is a terminal.
 void elf_print_header(const Elf_Header *h);
 
+// Canonical, class-agnostic program header.
+// Field order follows the 32-bit layout; the reader maps 64-bit
+// entries (which move p_flags earlier) into this.
+typedef struct {
+  uint32_t p_type;
+  uint64_t p_offset;
+  uint64_t p_vaddr;
+  uint64_t p_paddr;
+  uint64_t p_filesz;
+  uint64_t p_memsz;
+  uint32_t p_flags;
+  uint64_t p_align;
+} Elf_Phdr;
+
+// Reads the program header table. Allocates *entries_out (caller frees)
+// and stores the entry count in *count_out. If e_phnum claims more
+// entries than the file contains, the count is clamped to what fits and
+// a warning is logged. Returns 0 on success, 1 on failure.
+int elf_read_phdrs(FILE *f, const Elf_Header *header, Elf_Phdr **entries_out,
+                   uint16_t *count_out);
+
+void elf_print_phdrs(const Elf_Phdr *entries, uint16_t count);
+
 // Lookup helpers: map raw ELF field values to human-readable strings.
 char *os_abi_lookup(int osabi);
 char *padding_bytes_check(const uint8_t e_ident[]);
 char *file_type_lookup(uint16_t e_type);
 char *target_isa_lookup(uint16_t e_machine);
 char *p_type_lookup(uint32_t p_type);
-void p_flag_string(char *flag_str, uint32_t p_flags);
+void p_flag_string(char flag_str[static 4], uint32_t p_flags);
 char *s_name(uint32_t sh_name);
 char *s_type_lookup(uint32_t sh_type);
 

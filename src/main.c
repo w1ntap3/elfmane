@@ -2,6 +2,7 @@
 #include "elf.h"
 #include "log.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // One-word codename describes the current work state.
@@ -83,8 +84,16 @@ int handle_header(int argc, const char *argv[]) {
   } else {
     if (opts.parts & PART_EHDR)
       elf_print_header(&header);
-    if (opts.parts & PART_PHDR)
-      log_sys("Program header table is not implemented yet.");
+    if (opts.parts & PART_PHDR) {
+      Elf_Phdr *phdrs = NULL;
+      uint16_t phdr_count = 0;
+      if (elf_read_phdrs(f, &header, &phdrs, &phdr_count) == 0) {
+        elf_print_phdrs(phdrs, phdr_count);
+        free(phdrs);
+      } else {
+        rc = 1;
+      }
+    }
     if (opts.parts & PART_SHDR)
       log_sys("Section header table is not implemented yet.");
   }

@@ -1,4 +1,4 @@
-SRC := $(wildcard src-c/*.c)
+SRC := $(wildcard src/*.c)
 TARGET := elfmane
 PATH_FOR_BIN := ~/.local/bin/
 GIT_HASH := $(shell git rev-parse --short HEAD)

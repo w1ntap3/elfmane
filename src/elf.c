@@ -3,6 +3,7 @@
 #include "elf.h"
 #include "log.h"
 #include <inttypes.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -185,6 +186,135 @@ void elf_print_header(const Elf_Header *h) {
          is64 ? "typically 0x40" : "typically 0x28");
   printf("%sEntries in the section header: %d%s\n", highlight_code(), h->e_shnum, reset_code());
   printf("Index of section names: %d\n", h->e_shstrndx);
+}
+
+static long file_size(FILE *f) {
+  const long here = ftell(f);
+  long size = -1;
+  if (fseek(f, 0, SEEK_END) == 0)
+    size = ftell(f);
+  if (fseek(f, here, SEEK_SET) != 0)
+    return -1;
+  return size;
+}
+
+// Reads one program header entry (32- or 64-bit layout).
+// Returns 0 on success, 1 on truncated read.
+static int read_phdr_entry(FILE *f, const Elf_Header *header,
+                           Elf_Phdr *entry) {
+  const int is_64bit = (header->elf_class == ELFCLASS64);
+  const int byte_order = header->encoding;
+
+  if (read_u32(f, byte_order, &entry->p_type))
+    return 1;
+  if (is_64bit && read_u32(f, byte_order, &entry->p_flags))
+    return 1;
+
+  // 32-bit: six u32. 64-bit: six u64. Either way: offset, vaddr, paddr,
+  // filesz, memsz, align — everything but type and flags.
+  uint64_t *fields[] = {&entry->p_offset, &entry->p_vaddr, &entry->p_paddr,
+                        &entry->p_filesz, &entry->p_memsz, &entry->p_align};
+  for (size_t field_idx = 0; field_idx < 6; field_idx++) {
+    uint32_t field32;
+    if (is_64bit) {
+      if (read_u64(f, byte_order, fields[field_idx]))
+        return 1;
+    } else {
+      if (read_u32(f, byte_order, &field32))
+        return 1;
+      *fields[field_idx] = field32;
+    }
+  }
+  if (!is_64bit && read_u32(f, byte_order, &entry->p_flags))
+    return 1;
+  return 0;
+}
+
+int elf_read_phdrs(FILE *f, const Elf_Header *header, Elf_Phdr **entries_out,
+                   uint16_t *count_out) {
+  const uint64_t entry_size =
+      (header->elf_class == ELFCLASS64) ? 56 : 32;
+
+  *entries_out = NULL;
+  *count_out = header->e_phnum;
+
+  if (header->e_phnum == 0)
+    return 0;
+  if (header->e_phentsize == 0 || header->e_phentsize < entry_size) {
+    log_err("Program header entry size %d is invalid (expected at least "
+            "%" PRIu64 ").",
+            header->e_phentsize, entry_size);
+    return 1;
+  }
+
+  const long size = file_size(f);
+  if (size < 0 || header->e_phoff > (uint64_t)size) {
+    log_err("Program header table lies outside the file.");
+    return 1;
+  }
+
+  const uint64_t available = (uint64_t)size - header->e_phoff;
+  if ((uint64_t)*count_out * header->e_phentsize > available) {
+    const uint16_t fits = (uint16_t)(available / header->e_phentsize);
+    log_warn("Program header claims %d entries but only %d fit in the file; "
+             "clamping.",
+             *count_out, fits);
+    *count_out = fits;
+  }
+  if (*count_out == 0)
+    return 0;
+
+  Elf_Phdr *entries = malloc(*count_out * sizeof(*entries));
+  if (entries == NULL) {
+    log_err("Could not allocate memory for %d program header entries.",
+            *count_out);
+    return 1;
+  }
+  if (fseek(f, (long)header->e_phoff, SEEK_SET) != 0) {
+    log_err("Failed to seek to the program header table.");
+    free(entries);
+    return 1;
+  }
+
+  for (uint16_t entry_idx = 0; entry_idx < *count_out; entry_idx++) {
+    if (read_phdr_entry(f, header, &entries[entry_idx]) != 0) {
+      log_err("Program header entry %d extends past the end of the file.",
+              entry_idx);
+      free(entries);
+      return 1;
+    }
+    // e_phentsize may exceed the struct; honor it as the stride.
+    if (fseek(f, (long)(header->e_phentsize - entry_size), SEEK_CUR) != 0) {
+      log_err("Failed to advance to program header entry %d.", entry_idx + 1);
+      free(entries);
+      return 1;
+    }
+  }
+
+  *entries_out = entries;
+  return 0;
+}
+
+void elf_print_phdrs(const Elf_Phdr *entries, uint16_t count) {
+  printf("\n───── Program Header Table ─────\n");
+  if (count == 0) {
+    printf("(no entries)\n");
+    return;
+  }
+  printf("%-4s %-12s %-18s %-18s %-18s %-12s %-12s %-4s %-10s\n", "N", "Type",
+         "Off", "VAddress", "PAddress", "SizeFile", "SizeMem", "RWX",
+         "Align");
+  for (uint16_t entry_idx = 0; entry_idx < count; entry_idx++) {
+    const Elf_Phdr *entry = &entries[entry_idx];
+    char flags[4];
+    p_flag_string(flags, entry->p_flags);
+
+    printf("%-4d %-12s 0x%-16" PRIx64 " 0x%-16" PRIx64 " 0x%-16" PRIx64
+           " 0x%-10" PRIx64 " 0x%-10" PRIx64 " %-4s %-10" PRIu64 "\n",
+           entry_idx, p_type_lookup(entry->p_type), entry->p_offset,
+           entry->p_vaddr, entry->p_paddr, entry->p_filesz, entry->p_memsz,
+           flags, entry->p_align);
+  }
 }
 
 char *os_abi_lookup(int osabi) {
@@ -429,6 +559,20 @@ char *p_type_lookup(uint32_t p_type) {
     return "TLS";
   case 0x60000000:
     return "LOOS";
+  case 0x6474e550:
+    return "GNU_EH_FRAME";
+  case 0x6474e551:
+    return "GNU_STACK";
+  case 0x6474e552:
+    return "GNU_RELRO";
+  case 0x6474e553:
+    return "GNU_PROPERTY";
+  case 0x6474e554:
+    return "GNU_SFRAME";
+  case 0x6474e555:
+    return "GNU_OPENSSL";
+  case 0x6474e556:
+    return "GNU_MBIND";
   case 0x6FFFFFFF:
     return "HIOS";
   case 0x70000000:
@@ -440,10 +584,12 @@ char *p_type_lookup(uint32_t p_type) {
   }
 }
 
-void p_flag_string(char *flag_str, uint32_t p_flags) {
+// Fills flag_str with the 4-byte RWX representation of p_flags.
+void p_flag_string(char flag_str[static 4], uint32_t p_flags) {
   flag_str[0] = (p_flags & PF_R) ? 'R' : '-';
   flag_str[1] = (p_flags & PF_W) ? 'W' : '-';
   flag_str[2] = (p_flags & PF_X) ? 'X' : '-';
+  flag_str[3] = '\0';
 }
 
 // Phase 1 stub: resolves against the shstrtab once elf_read_shdrs() exists.
